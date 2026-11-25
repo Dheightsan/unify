@@ -10,6 +10,7 @@ readme = "README.rst"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Steven Myint" }]
+maintainers = [{ name = "Dheightsan" }]
 requires-python = ">=3.11"
 dependencies = []
 keywords = ["strings", "formatter", "style"]
@@ -25,7 +26,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/myint/unify"
+Homepage = "https://github.com/Dheightsan/unify"
+Upstream = "https://github.com/myint/unify"
 
 [project.scripts]
 unify = "unify:main"
