@@ -119,7 +119,7 @@ class TestUnitsWithFstrings(unittest.TestCase):
                                            preferred_quote="'"))
 
     def test_format_code_should_ignore_strings_in_replacement_field(self):
-        # 'k' inside f'...' is a syntax error before python 3.12
+        # f'{d['k']}' only parses on 3.12+
         self.assertEqual("x = f'{d[\"k\"]}'\n",
                          unify.format_code("x = f'{d[\"k\"]}'\n",
                                            preferred_quote="'"))
@@ -132,6 +132,21 @@ class TestUnitsWithFstrings(unittest.TestCase):
         self.assertEqual('x = f"{f"{a}"}"\n',
                          unify.format_code('x = f"{f"{a}"}"\n',
                                            preferred_quote="'"))
+
+    @unittest.skipIf(sys.version_info < (3, 14), 'needs PEP 750')
+    def test_format_code_should_ignore_template_strings(self):
+        self.assertEqual("x = t\"{a}\" + 'b'\n",
+                         unify.format_code('x = t"{a}" + "b"\n',
+                                           preferred_quote="'"))
+        self.assertEqual("x = t'{d[\"k\"]}'\n",
+                         unify.format_code("x = t'{d[\"k\"]}'\n",
+                                           preferred_quote="'"))
+
+    def test_format_code_with_non_ascii_and_tabs(self):
+        self.assertEqual("x = 'ñandú' + f'é{a}'\t# \"ü\"\n",
+                         unify.format_code(
+                             'x = "ñandú" + f"é{a}"\t# "ü"\n',
+                             preferred_quote="'"))
 
 
 class TestUnitsWithRawStrings(unittest.TestCase):
