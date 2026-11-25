@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import contextlib
 import io
+import sys
 import tempfile
 
 try:
@@ -100,6 +101,32 @@ class TestUnitsWithFstrings(unittest.TestCase):
     def test_format_code_with_syntax_error(self):
         self.assertEqual('foo(f"abc"\n',
                          unify.format_code('foo(f"abc"\n',
+                                           preferred_quote="'"))
+
+    def test_format_code_with_replacement_fields(self):
+        self.assertEqual("x = f'{a} and {b!r:>{w}}' + 'c'\n",
+                         unify.format_code(
+                             'x = f"{a} and {b!r:>{w}}" + "c"\n',
+                             preferred_quote="'"))
+
+    def test_format_code_with_escaped_braces(self):
+        self.assertEqual("x = f'{{a}} {b}'\n",
+                         unify.format_code('x = f"{{a}} {b}"\n',
+                                           preferred_quote="'"))
+
+    def test_format_code_should_ignore_strings_in_replacement_field(self):
+        # 'k' inside f'...' is a syntax error before python 3.12
+        self.assertEqual("x = f'{d[\"k\"]}'\n",
+                         unify.format_code("x = f'{d[\"k\"]}'\n",
+                                           preferred_quote="'"))
+        self.assertEqual("x = f'{d[\"k\"]}'\n",
+                         unify.format_code("x = f'{d[\"k\"]}'\n",
+                                           preferred_quote='"'))
+
+    @unittest.skipIf(sys.version_info < (3, 12), 'needs PEP 701')
+    def test_format_code_with_nested_fstring(self):
+        self.assertEqual('x = f"{f"{a}"}"\n',
+                         unify.format_code('x = f"{f"{a}"}"\n',
                                            preferred_quote="'"))
 
 

@@ -59,15 +59,39 @@ def _format_code(source, preferred_quote):
         return source
 
     modified_tokens = []
-
+    lines = []
     sio = io.StringIO(source)
+
+    def readline():
+        line = sio.readline()
+        lines.append(line)
+        return line
+
+    # 3.12+ splits f-strings into several tokens (PEP 701)
+    depth = 0
+    outer_index = None
     for (token_type,
          token_string,
          start,
          end,
-         line) in tokenize.generate_tokens(sio.readline):
+         line) in tokenize.generate_tokens(readline):
 
-        if token_type == tokenize.STRING:
+        if token_type in _STRING_START_TYPES:
+            if depth == 0:
+                outer_index = len(modified_tokens)
+            depth += 1
+        elif token_type in _STRING_END_TYPES:
+            depth -= 1
+            if depth == 0:
+                literal = _source_slice(lines,
+                                        modified_tokens[outer_index][2],
+                                        end)
+                if unify_quotes(literal, preferred_quote) != literal:
+                    old = modified_tokens[outer_index]
+                    modified_tokens[outer_index] = (
+                        (old[0], old[1][:-1] + preferred_quote) + old[2:])
+                    token_string = preferred_quote
+        elif token_type == tokenize.STRING and depth == 0:
             token_string = unify_quotes(token_string,
                                         preferred_quote=preferred_quote)
 
@@ -75,6 +99,24 @@ def _format_code(source, preferred_quote):
             (token_type, token_string, start, end, line))
 
     return untokenize.untokenize(modified_tokens)
+
+
+_STRING_START_TYPES = tuple(
+    getattr(tokenize, name) for name in ('FSTRING_START', 'TSTRING_START')
+    if hasattr(tokenize, name))
+_STRING_END_TYPES = tuple(
+    getattr(tokenize, name) for name in ('FSTRING_END', 'TSTRING_END')
+    if hasattr(tokenize, name))
+
+
+def _source_slice(lines, start, end):
+    """Return the source text between two (row, column) positions."""
+    (start_row, start_col), (end_row, end_col) = start, end
+    if start_row == end_row:
+        return lines[start_row - 1][start_col:end_col]
+    return (lines[start_row - 1][start_col:] +
+            ''.join(lines[start_row:end_row - 1]) +
+            lines[end_row - 1][:end_col])
 
 
 def unify_quotes(token_string, preferred_quote):
