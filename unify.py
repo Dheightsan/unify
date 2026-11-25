@@ -24,9 +24,6 @@
 
 """Modifies strings to all use the same quote where possible."""
 
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import io
 import os
 import signal
@@ -37,12 +34,6 @@ import untokenize
 
 
 __version__ = '0.5'
-
-
-try:
-    unicode
-except NameError:
-    unicode = str
 
 
 def format_code(source, preferred_quote="'"):
@@ -156,8 +147,8 @@ def unify_quotes(token_string, preferred_quote):
 
 def open_with_encoding(filename, encoding, mode='r'):
     """Return opened file with a specific encoding."""
-    return io.open(filename, mode=mode, encoding=encoding,
-                   newline='')  # Preserve line endings
+    return open(filename, mode=mode, encoding=encoding,
+                newline='')  # Preserve line endings
 
 
 def detect_encoding(filename):
@@ -240,7 +231,7 @@ def _main(argv, standard_out, standard_error):
     while filenames:
         name = filenames.pop(0)
         if args.recursive and os.path.isdir(name):
-            for root, directories, children in os.walk(unicode(name)):
+            for root, directories, children in os.walk(name):
                 filenames += [os.path.join(root, f) for f in children
                               if f.endswith('.py') and
                               not f.startswith('.')]
@@ -251,7 +242,7 @@ def _main(argv, standard_out, standard_error):
                 if format_file(name, args=args, standard_out=standard_out):
                     changes_needed = True
             except IOError as exception:
-                print(unicode(exception), file=standard_error)
+                print(str(exception), file=standard_error)
                 failure = True
 
     if failure or (args.check_only and changes_needed):
