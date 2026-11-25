@@ -31,7 +31,7 @@ import sys
 import tokenize
 
 
-__version__ = '0.5'
+__version__ = '0.6.dev0'
 
 
 def format_code(source, preferred_quote="'"):
