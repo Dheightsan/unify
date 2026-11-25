@@ -11,7 +11,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Steven Myint" }]
 requires-python = ">=3.11"
-dependencies = ["untokenize"]
+dependencies = []
 keywords = ["strings", "formatter", "style"]
 classifiers = [
     "Intended Audience :: Developers",

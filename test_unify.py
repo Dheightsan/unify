@@ -55,6 +55,17 @@ class TestUnits(unittest.TestCase):
                          unify.format_code('foo("abc"\n',
                                            preferred_quote="'"))
 
+    def test_format_code_keeps_crlf(self):
+        self.assertEqual("x = 'abc'\r\ny = ('a',\r\n     'b')\r\n",
+                         unify.format_code(
+                             'x = "abc"\r\ny = ("a",\r\n     "b")\r\n',
+                             preferred_quote="'"))
+
+    def test_format_code_with_string_continued_on_next_line(self):
+        self.assertEqual("x = 'abc\\\ndef'  # \"\n",
+                         unify.format_code('x = "abc\\\ndef"  # "\n',
+                                           preferred_quote="'"))
+
 
 class TestUnitsWithFstrings(unittest.TestCase):
     """ Tests for python >= 3.6 fstring handling."""

@@ -30,8 +30,6 @@ import signal
 import sys
 import tokenize
 
-import untokenize
-
 
 __version__ = '0.5'
 
@@ -49,7 +47,6 @@ def _format_code(source, preferred_quote):
     if not source:
         return source
 
-    modified_tokens = []
     lines = []
     sio = io.StringIO(source)
 
@@ -58,38 +55,35 @@ def _format_code(source, preferred_quote):
         lines.append(line)
         return line
 
-    # 3.12+ splits f-strings into several tokens (PEP 701)
+    quotes = []
     depth = 0
-    outer_index = None
+    fstring_start = None
     for (token_type,
          token_string,
          start,
          end,
-         line) in tokenize.generate_tokens(readline):
+         _) in tokenize.generate_tokens(readline):
 
+        # 3.12+ splits f-strings into several tokens (PEP 701)
         if token_type in _STRING_START_TYPES:
             if depth == 0:
-                outer_index = len(modified_tokens)
+                fstring_start = start
             depth += 1
         elif token_type in _STRING_END_TYPES:
             depth -= 1
             if depth == 0:
-                literal = _source_slice(lines,
-                                        modified_tokens[outer_index][2],
-                                        end)
-                if unify_quotes(literal, preferred_quote) != literal:
-                    old = modified_tokens[outer_index]
-                    modified_tokens[outer_index] = (
-                        (old[0], old[1][:-1] + preferred_quote) + old[2:])
-                    token_string = preferred_quote
+                quotes += _quotes_to_replace(
+                    _source_slice(lines, fstring_start, end),
+                    fstring_start, end, preferred_quote)
         elif token_type == tokenize.STRING and depth == 0:
-            token_string = unify_quotes(token_string,
-                                        preferred_quote=preferred_quote)
+            quotes += _quotes_to_replace(token_string, start, end,
+                                         preferred_quote)
 
-        modified_tokens.append(
-            (token_type, token_string, start, end, line))
-
-    return untokenize.untokenize(modified_tokens)
+    lines.append(sio.read())
+    for row, column in quotes:
+        line = lines[row - 1]
+        lines[row - 1] = line[:column] + preferred_quote + line[column + 1:]
+    return ''.join(lines)
 
 
 _STRING_START_TYPES = tuple(
@@ -98,6 +92,14 @@ _STRING_START_TYPES = tuple(
 _STRING_END_TYPES = tuple(
     getattr(tokenize, name) for name in ('FSTRING_END', 'TSTRING_END')
     if hasattr(tokenize, name))
+
+
+def _quotes_to_replace(literal, start, end, preferred_quote):
+    """Return the positions of the outer quotes if they should change."""
+    if unify_quotes(literal, preferred_quote) == literal:
+        return []
+    opening = literal.index(literal[-1])
+    return [(start[0], start[1] + opening), (end[0], end[1] - 1)]
 
 
 def _source_slice(lines, start, end):
